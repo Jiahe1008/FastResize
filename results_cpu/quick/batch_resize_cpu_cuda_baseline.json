@@ -1,0 +1,86 @@
+{
+  "config": {
+    "iters": 2,
+    "warmup": 1,
+    "batch_sizes": [
+      1,
+      2
+    ],
+    "cuda_csv": "cuda_results/batch_resize_compare_with_kernel.csv",
+    "cpu_impl": "fast_cpu_resize:resize"
+  },
+  "rows": [
+    {
+      "method": "cpu",
+      "batch_size": 1,
+      "median_ms_per_frame": 1.6062205,
+      "median_ms_per_batch": 1.6062205,
+      "p95_ms_per_batch": 1.69346425,
+      "fps_by_median": 622.5795275306224,
+      "input_throughput_GBps": 13.770463021733319
+    },
+    {
+      "method": "cuda",
+      "batch_size": 1,
+      "median_ms_per_frame": 2.169756,
+      "median_ms_per_batch": 2.169756,
+      "p95_ms_per_batch": 4.03933935,
+      "fps_by_median": 460.8813156871095,
+      "input_throughput_GBps": 10.193957292893762
+    },
+    {
+      "method": "cuda_kernel_only",
+      "batch_size": 1,
+      "median_ms_per_frame": 0.1074879989027977,
+      "median_ms_per_batch": 0.1074879989027977,
+      "p95_ms_per_batch": 1.4619440019130703,
+      "fps_by_median": 9303.364191422974,
+      "input_throughput_GBps": 205.77553053156993
+    },
+    {
+      "method": "opencv",
+      "batch_size": 1,
+      "median_ms_per_frame": 0.241922,
+      "median_ms_per_batch": 0.241922,
+      "p95_ms_per_batch": 1.0509624000000042,
+      "fps_by_median": 4133.563710617472,
+      "input_throughput_GBps": 91.42781557692149
+    },
+    {
+      "method": "cpu",
+      "batch_size": 2,
+      "median_ms_per_frame": 1.03010625,
+      "median_ms_per_batch": 2.0602125,
+      "p95_ms_per_batch": 2.45504655,
+      "fps_by_median": 970.7736459224474,
+      "input_throughput_GBps": 21.47195980997106
+    },
+    {
+      "method": "cuda",
+      "batch_size": 2,
+      "median_ms_per_frame": 2.8164497500000003,
+      "median_ms_per_batch": 5.632899500000001,
+      "p95_ms_per_batch": 10.831074700000002,
+      "fps_by_median": 355.05692938423624,
+      "input_throughput_GBps": 7.853291186892291
+    },
+    {
+      "method": "cuda_kernel_only",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.08627200126647949,
+      "median_ms_per_batch": 0.17254400253295898,
+      "p95_ms_per_batch": 0.6541663885116558,
+      "fps_by_median": 11591.246120640817,
+      "input_throughput_GBps": 256.3798181947819
+    },
+    {
+      "method": "opencv",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.42284975,
+      "median_ms_per_batch": 0.8456995,
+      "p95_ms_per_batch": 2.996860100000001,
+      "fps_by_median": 2364.906210775813,
+      "input_throughput_GBps": 52.30794153242375
+    }
+  ]
+}

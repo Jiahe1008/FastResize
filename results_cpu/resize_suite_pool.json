@@ -1,0 +1,394 @@
+{
+  "config": {
+    "iters": 300,
+    "warmup": 30,
+    "kernel_iters": 300,
+    "kernel_warmup": 30,
+    "src_width": 3840,
+    "src_height": 1920,
+    "dst_width": 640,
+    "dst_height": 640,
+    "interp": "linear",
+    "seed": 12345,
+    "input_pool_size": 4,
+    "batch_sizes": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      48,
+      64
+    ],
+    "methods": [
+      "baseline",
+      "cpu_float",
+      "cpu_fixed",
+      "cuda",
+      "cuda_resize_only"
+    ]
+  },
+  "rows": [
+    {
+      "method": "baseline",
+      "batch_size": 1,
+      "median_ms_per_frame": 0.34945,
+      "median_ms_per_batch": 0.34945,
+      "p95_ms_per_batch": 1.2662267000000003,
+      "fps_by_median": 2861.6397195593077,
+      "input_throughput_GBps": 63.29489197310059
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 1,
+      "median_ms_per_frame": 1.1478069999999998,
+      "median_ms_per_batch": 1.1478069999999998,
+      "p95_ms_per_batch": 1.834741900000001,
+      "fps_by_median": 871.226608654591,
+      "input_throughput_GBps": 19.27013862086571
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 1,
+      "median_ms_per_frame": 1.0629285,
+      "median_ms_per_batch": 1.0629285,
+      "p95_ms_per_batch": 1.55772055,
+      "fps_by_median": 940.7970526709935,
+      "input_throughput_GBps": 20.808925529798103
+    },
+    {
+      "method": "cuda",
+      "batch_size": 1,
+      "median_ms_per_frame": 4.847497000000001,
+      "median_ms_per_batch": 4.847497000000001,
+      "p95_ms_per_batch": 7.273675800000001,
+      "fps_by_median": 206.29203071193234,
+      "input_throughput_GBps": 4.562849652098804
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 1,
+      "median_ms_per_frame": 0.08632000163197517,
+      "median_ms_per_batch": 0.08632000163197517,
+      "p95_ms_per_batch": 1.1124991536140447,
+      "fps_by_median": 11584.800522403766,
+      "input_throughput_GBps": 256.2372518747355
+    },
+    {
+      "method": "baseline",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.83606525,
+      "median_ms_per_batch": 1.6721305,
+      "p95_ms_per_batch": 4.358384000000004,
+      "fps_by_median": 1196.078894559964,
+      "input_throughput_GBps": 26.455351421435108
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.81990925,
+      "median_ms_per_batch": 1.6398185,
+      "p95_ms_per_batch": 2.1817410000000006,
+      "fps_by_median": 1219.6471743671632,
+      "input_throughput_GBps": 26.976644061522663
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.5802095,
+      "median_ms_per_batch": 1.160419,
+      "p95_ms_per_batch": 1.5888077,
+      "fps_by_median": 1723.5153853909665,
+      "input_throughput_GBps": 38.12140270023155
+    },
+    {
+      "method": "cuda",
+      "batch_size": 2,
+      "median_ms_per_frame": 3.91979475,
+      "median_ms_per_batch": 7.8395895,
+      "p95_ms_per_batch": 11.148314250000002,
+      "fps_by_median": 255.11539858049966,
+      "input_throughput_GBps": 5.642744431962924
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.11771199852228165,
+      "median_ms_per_batch": 0.2354239970445633,
+      "p95_ms_per_batch": 1.1789823651313789,
+      "fps_by_median": 8495.3106952025,
+      "input_throughput_GBps": 187.90268008076697
+    },
+    {
+      "method": "baseline",
+      "batch_size": 4,
+      "median_ms_per_frame": 0.7649925,
+      "median_ms_per_batch": 3.05997,
+      "p95_ms_per_batch": 6.8035491,
+      "fps_by_median": 1307.2023581930544,
+      "input_throughput_GBps": 28.91322463945725
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 4,
+      "median_ms_per_frame": 0.6618569999999999,
+      "median_ms_per_batch": 2.6474279999999997,
+      "p95_ms_per_batch": 3.4987489000000003,
+      "fps_by_median": 1510.9003908699312,
+      "input_throughput_GBps": 33.41869920541749
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 4,
+      "median_ms_per_frame": 0.453974875,
+      "median_ms_per_batch": 1.8158995,
+      "p95_ms_per_batch": 2.58769435,
+      "fps_by_median": 2202.765075930689,
+      "input_throughput_GBps": 48.721639055465346
+    },
+    {
+      "method": "cuda",
+      "batch_size": 4,
+      "median_ms_per_frame": 3.890648625,
+      "median_ms_per_batch": 15.5625945,
+      "p95_ms_per_batch": 19.6612184,
+      "fps_by_median": 257.0265517102563,
+      "input_throughput_GBps": 5.685016081348133
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 4,
+      "median_ms_per_frame": 0.09339999780058861,
+      "median_ms_per_batch": 0.37359999120235443,
+      "p95_ms_per_batch": 0.8145616143941883,
+      "fps_by_median": 10706.638367754844,
+      "input_throughput_GBps": 236.81371007334872
+    },
+    {
+      "method": "baseline",
+      "batch_size": 8,
+      "median_ms_per_frame": 0.7674654375000001,
+      "median_ms_per_batch": 6.1397235000000006,
+      "p95_ms_per_batch": 19.773907400000013,
+      "fps_by_median": 1302.9902730961744,
+      "input_throughput_GBps": 28.820060056450423
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 8,
+      "median_ms_per_frame": 0.6658969375,
+      "median_ms_per_batch": 5.3271755,
+      "p95_ms_per_batch": 6.388074050000001,
+      "fps_by_median": 1501.7338925665204,
+      "input_throughput_GBps": 33.21595092934332
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 8,
+      "median_ms_per_frame": 0.381192125,
+      "median_ms_per_batch": 3.049537,
+      "p95_ms_per_batch": 3.8900549,
+      "fps_by_median": 2623.349052659469,
+      "input_throughput_GBps": 58.0242836863432
+    },
+    {
+      "method": "cuda",
+      "batch_size": 8,
+      "median_ms_per_frame": 4.5152826875,
+      "median_ms_per_batch": 36.1222615,
+      "p95_ms_per_batch": 55.358582000000006,
+      "fps_by_median": 221.47007600839166,
+      "input_throughput_GBps": 4.89856372918401
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 8,
+      "median_ms_per_frame": 0.09879399836063385,
+      "median_ms_per_batch": 0.7903519868850708,
+      "p95_ms_per_batch": 2.3191887736320496,
+      "fps_by_median": 10122.07235858233,
+      "input_throughput_GBps": 223.88404525606742
+    },
+    {
+      "method": "baseline",
+      "batch_size": 16,
+      "median_ms_per_frame": 0.71397703125,
+      "median_ms_per_batch": 11.4236325,
+      "p95_ms_per_batch": 51.78019590000001,
+      "fps_by_median": 1400.6052803256757,
+      "input_throughput_GBps": 30.979147832355427
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 16,
+      "median_ms_per_frame": 0.62548534375,
+      "median_ms_per_batch": 10.0077655,
+      "p95_ms_per_batch": 12.240781949999999,
+      "fps_by_median": 1598.7584840991728,
+      "input_throughput_GBps": 35.36197965469914
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 16,
+      "median_ms_per_frame": 0.36823353125,
+      "median_ms_per_batch": 5.8917365,
+      "p95_ms_per_batch": 7.263861949999999,
+      "fps_by_median": 2715.667952903189,
+      "input_throughput_GBps": 60.066230049493896
+    },
+    {
+      "method": "cuda",
+      "batch_size": 16,
+      "median_ms_per_frame": 3.91003734375,
+      "median_ms_per_batch": 62.5605975,
+      "p95_ms_per_batch": 73.2125592,
+      "fps_by_median": 255.7520330588275,
+      "input_throughput_GBps": 5.65682576800837
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 16,
+      "median_ms_per_frame": 0.08383199945092201,
+      "median_ms_per_batch": 1.3413119912147522,
+      "p95_ms_per_batch": 1.6227200210094452,
+      "fps_by_median": 11928.619221177381,
+      "input_throughput_GBps": 263.8419713816898
+    },
+    {
+      "method": "baseline",
+      "batch_size": 32,
+      "median_ms_per_frame": 0.787052109375,
+      "median_ms_per_batch": 25.1856675,
+      "p95_ms_per_batch": 119.81121440000007,
+      "fps_by_median": 1270.5639030611358,
+      "input_throughput_GBps": 28.102840633467427
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 32,
+      "median_ms_per_frame": 0.63355821875,
+      "median_ms_per_batch": 20.273863,
+      "p95_ms_per_batch": 25.071928800000002,
+      "fps_by_median": 1578.3869112659982,
+      "input_throughput_GBps": 34.91139305814585
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 32,
+      "median_ms_per_frame": 0.35636460937500003,
+      "median_ms_per_batch": 11.403667500000001,
+      "p95_ms_per_batch": 12.879501000000001,
+      "fps_by_median": 2806.114787194558,
+      "input_throughput_GBps": 62.066769309084115
+    },
+    {
+      "method": "cuda",
+      "batch_size": 32,
+      "median_ms_per_frame": 4.0366078125,
+      "median_ms_per_batch": 129.17145,
+      "p95_ms_per_batch": 138.5992005,
+      "fps_by_median": 247.7327613803205,
+      "input_throughput_GBps": 5.479452309314481
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 32,
+      "median_ms_per_frame": 0.07478299736976624,
+      "median_ms_per_batch": 2.3930559158325195,
+      "p95_ms_per_batch": 3.4350415945053103,
+      "fps_by_median": 13372.023523682492,
+      "input_throughput_GBps": 295.7677651062188
+    },
+    {
+      "method": "baseline",
+      "batch_size": 48,
+      "median_ms_per_frame": 0.8043277708333333,
+      "median_ms_per_batch": 38.607732999999996,
+      "p95_ms_per_batch": 81.63581335000003,
+      "fps_by_median": 1243.2742424943729,
+      "input_throughput_GBps": 27.49923700518754
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 48,
+      "median_ms_per_frame": 0.5468226979166667,
+      "median_ms_per_batch": 26.2474895,
+      "p95_ms_per_batch": 33.1714023,
+      "fps_by_median": 1828.7463263867576,
+      "input_throughput_GBps": 40.448942745552856
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 48,
+      "median_ms_per_frame": 0.31809490625,
+      "median_ms_per_batch": 15.2685555,
+      "p95_ms_per_batch": 18.235158000000002,
+      "fps_by_median": 3143.715854456566,
+      "input_throughput_GBps": 69.53396475521211
+    },
+    {
+      "method": "cuda",
+      "batch_size": 48,
+      "median_ms_per_frame": 3.9756659791666666,
+      "median_ms_per_batch": 190.831967,
+      "p95_ms_per_batch": 201.87935270000003,
+      "fps_by_median": 251.53018519166653,
+      "input_throughput_GBps": 5.563445248143357
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 48,
+      "median_ms_per_frame": 0.07349433253208795,
+      "median_ms_per_batch": 3.5277279615402217,
+      "p95_ms_per_batch": 4.584693026542665,
+      "fps_by_median": 13606.491351743287,
+      "input_throughput_GBps": 300.95381831439875
+    },
+    {
+      "method": "baseline",
+      "batch_size": 64,
+      "median_ms_per_frame": 0.8738594375,
+      "median_ms_per_batch": 55.927004,
+      "p95_ms_per_batch": 117.99970945000001,
+      "fps_by_median": 1144.348801519924,
+      "input_throughput_GBps": 25.31116453153829
+    },
+    {
+      "method": "cpu_float",
+      "batch_size": 64,
+      "median_ms_per_frame": 0.531569296875,
+      "median_ms_per_batch": 34.020435,
+      "p95_ms_per_batch": 40.910312000000005,
+      "fps_by_median": 1881.2222712613757,
+      "input_throughput_GBps": 41.60962668466761
+    },
+    {
+      "method": "cpu_fixed",
+      "batch_size": 64,
+      "median_ms_per_frame": 0.3041969375,
+      "median_ms_per_batch": 19.468604,
+      "p95_ms_per_batch": 22.582503799999998,
+      "fps_by_median": 3287.3440745931243,
+      "input_throughput_GBps": 72.71079117948057
+    },
+    {
+      "method": "cuda",
+      "batch_size": 64,
+      "median_ms_per_frame": 4.2061213281250005,
+      "median_ms_per_batch": 269.19176500000003,
+      "p95_ms_per_batch": 299.73162064999997,
+      "fps_by_median": 237.74872905194553,
+      "input_throughput_GBps": 5.258621488662552
+    },
+    {
+      "method": "cuda_resize_only",
+      "batch_size": 64,
+      "median_ms_per_frame": 0.07240749895572662,
+      "median_ms_per_batch": 4.634079933166504,
+      "p95_ms_per_batch": 6.495657753944397,
+      "fps_by_median": 13810.724226387758,
+      "input_throughput_GBps": 305.471122728935
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python bench_resize.py \
+  --impl opencv \
+  --interp linear \
+  --warmup 30 \
+  --iters 300 \
+  --batch-size 1
+impl: opencv
+case: 3840x1920 RGB8 -> 640x640, interp=linear
+batch_size: 1, input_shape: (1920, 3840, 3)
+iters: 300, warmup: 30, seed: 12345
+min_ms: 0.2068
+median_ms: 0.2319
+median_ms_per_frame: 0.2319
+mean_ms: 0.8550
+p95_ms: 4.7183
+calls_per_second_by_median: 4311.63
+fps_by_median: 4311.63
+input_throughput_GBps: 95.3663
+checksum: 156972935
+
+
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python bench_resize.py \
+  --impl opencv \
+  --interp linear \
+  --warmup 30 \
+  --iters 300 \
+  --batch-size 4
+impl: opencv
+case: 3840x1920 RGB8 -> 640x640, interp=linear
+batch_size: 4, input_shape: (4, 1920, 3840, 3)
+iters: 300, warmup: 30, seed: 12345
+min_ms: 1.8505
+median_ms: 2.1766
+median_ms_per_frame: 0.5442
+mean_ms: 2.6323
+p95_ms: 5.9698
+calls_per_second_by_median: 459.42
+fps_by_median: 1837.70
+input_throughput_GBps: 40.6470
+checksum: 627932786
+
+
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python bench_resize.py \
+  --impl cuda_resize_py:resize \
+  --signature src_dsize_interp \
+  --interp linear \
+  --warmup 30 \
+  --iters 300 \
+  --batch-size 1
+impl: cuda_resize_py:resize
+case: 3840x1920 RGB8 -> 640x640, interp=linear
+batch_size: 1, input_shape: (1920, 3840, 3)
+iters: 300, warmup: 30, seed: 12345
+check: max_abs_diff=1.0000, mean_abs_diff=0.2500
+min_ms: 3.8411
+median_ms: 4.1528
+median_ms_per_frame: 4.1528
+mean_ms: 4.2332
+p95_ms: 4.7374
+calls_per_second_by_median: 240.80
+fps_by_median: 240.80
+input_throughput_GBps: 5.3262
+checksum: 156665695
+
+
+checksum: 156665695
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python bench_resize.py \
+  --impl cuda_resize_py:resize \
+  --signature src_dsize_interp \
+  --interp linear \
+  --warmup 30 \
+  --iters 300 \
+  --batch-size 4
+impl: cuda_resize_py:resize
+case: 3840x1920 RGB8 -> 640x640, interp=linear
+batch_size: 4, input_shape: (4, 1920, 3840, 3)
+iters: 300, warmup: 30, seed: 12345
+check: max_abs_diff=1.0000, mean_abs_diff=0.2501
+min_ms: 13.2601
+median_ms: 15.1100
+median_ms_per_frame: 3.7775
+mean_ms: 15.3166
+p95_ms: 17.4078
+calls_per_second_by_median: 66.18
+fps_by_median: 264.73
+input_throughput_GBps: 5.8553
+checksum: 626703578
+
+
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python bench_resize.py \
+  --impl opencv \
+  --interp linear \
+  --warmup 30 \
+  --iters 300 \
+  --batch-size 32
+impl: opencv
+case: 3840x1920 RGB8 -> 640x640, interp=linear
+batch_size: 32, input_shape: (32, 1920, 3840, 3)
+iters: 300, warmup: 30, seed: 12345
+min_ms: 26.2840
+median_ms: 34.2316
+median_ms_per_frame: 1.0697
+mean_ms: 40.0352
+p95_ms: 76.9891
+calls_per_second_by_median: 29.21
+fps_by_median: 934.81
+input_throughput_GBps: 20.6765
+checksum: 5023175780
+
+
+total_with_numpy_copy_ms_per_frame: 5.0143
+input_copy_ms_per_frame:           2.3687
+h2d_ms_per_frame:                  1.7743
+kernel_ms_per_frame:               0.1261
+d2h_ms_per_frame:                  0.1228
+output_copy_ms_per_frame:          0.0849
+numpy_output_copy_ms_per_frame:    0.0746
+
+去掉numpy->pinned的CPU copy
+现在 CUDA 路径不再做：
+NumPy input -> slot.hostSrc pinned buffer
+而是：
+registered NumPy input -> GPU
+
+input_copy_ms_per_frame: 0.0000
+h2d_ms_per_frame:        3.4714
+kernel_ms_per_frame:     0.1665
+d2h_ms_per_frame:        0.1180
+
+(hpsc) jiahe@LAPTOP-6ARLLH63:~/code/lab/hpsc$ python scripts/profile_cuda_resize.py \
+  --batch-size 1 \
+  --warmup 3 \
+  --iters 3
+CUDA resize profile, ms/frame
+total_with_numpy_copy_ms_per_frame: median=3.1786, mean=3.2582, p95=3.1786
+pipeline_total_ms_per_frame: median=2.6184, mean=3.0217, p95=2.6184
+input_copy_ms_per_frame: median=0.0000, mean=0.0000, p95=0.0000
+h2d_ms_per_frame: median=1.7827, mean=2.2934, p95=1.7827
+kernel_ms_per_frame: median=0.0439, mean=0.0915, p95=0.0439
+d2h_ms_per_frame: median=0.1187, mean=0.1249, p95=0.1187
+gpu_total_ms_per_frame: median=1.9617, mean=2.5097, p95=1.9617
+output_copy_ms_per_frame: median=0.2596, mean=0.3001, p95=0.2596
+numpy_output_copy_ms_per_frame: median=0.0968, mean=0.2364, p95=0.0968
+checksum: 156665695
+
+3. 优化h2d_ms_per_frame
+
+batch=1 profile:
+h2d_ms_per_frame:    3.2580
+kernel_ms_per_frame: 0.2026
+d2h_ms_per_frame:    0.1497
+total_ms_per_frame:  3.9220
+
+batch=32 profile:
+h2d_ms_per_frame:    2.1593
+kernel_ms_per_frame: 0.0801
+d2h_ms_per_frame:    0.1180
+total_ms_per_frame:  2.4025

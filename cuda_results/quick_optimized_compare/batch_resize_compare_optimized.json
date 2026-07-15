@@ -1,0 +1,68 @@
+{
+  "config": {
+    "iters": 2,
+    "warmup": 1,
+    "batch_sizes": [
+      1,
+      2
+    ],
+    "old_csv": "results/batch_resize_compare.csv",
+    "cuda_impl": "cuda_resize_py:resize"
+  },
+  "rows": [
+    {
+      "method": "cuda_before",
+      "batch_size": 1,
+      "median_ms_per_frame": 4.1838765,
+      "median_ms_per_batch": 4.1838765,
+      "p95_ms_per_batch": 4.88526525,
+      "fps_by_median": 239.01279112803638,
+      "input_throughput_GBps": 5.2865805192863595
+    },
+    {
+      "method": "cuda_optimized",
+      "batch_size": 1,
+      "median_ms_per_frame": 2.223242,
+      "median_ms_per_batch": 2.223242,
+      "p95_ms_per_batch": 2.2574132000000002,
+      "fps_by_median": 449.7935897216767,
+      "input_throughput_GBps": 9.948714534899935
+    },
+    {
+      "method": "opencv",
+      "batch_size": 1,
+      "median_ms_per_frame": 0.241922,
+      "median_ms_per_batch": 0.241922,
+      "p95_ms_per_batch": 1.0509624000000042,
+      "fps_by_median": 4133.563710617472,
+      "input_throughput_GBps": 91.42781557692149
+    },
+    {
+      "method": "cuda_before",
+      "batch_size": 2,
+      "median_ms_per_frame": 3.657394,
+      "median_ms_per_batch": 7.314788,
+      "p95_ms_per_batch": 10.1536496,
+      "fps_by_median": 273.4187238235749,
+      "input_throughput_GBps": 6.0475847010193595
+    },
+    {
+      "method": "cuda_optimized",
+      "batch_size": 2,
+      "median_ms_per_frame": 2.1164295,
+      "median_ms_per_batch": 4.232859,
+      "p95_ms_per_batch": 4.4612619,
+      "fps_by_median": 472.4938865197258,
+      "input_throughput_GBps": 10.450808779597903
+    },
+    {
+      "method": "opencv",
+      "batch_size": 2,
+      "median_ms_per_frame": 0.42284975,
+      "median_ms_per_batch": 0.8456995,
+      "p95_ms_per_batch": 2.996860100000001,
+      "fps_by_median": 2364.906210775813,
+      "input_throughput_GBps": 52.30794153242375
+    }
+  ]
+}

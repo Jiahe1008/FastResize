@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/usr/local/cuda/include",
+        "/home/jiahe/miniforge3/envs/hpsc/include/opencv5",
+        "/home/jiahe/miniforge3/envs/hpsc/include/python3.11",
+        "/home/jiahe/miniforge3/envs/hpsc/lib/python3.11/site-packages/numpy/_core/include"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    }
+  ],
+  "version": 4
+}
