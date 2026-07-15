@@ -260,13 +260,80 @@ batch pipeline end-to-end 对比
 CUDA kernel-only 局部计时
 ```
 
-## 10. 后续方向
+## 10. 持久化线程池与水平/垂直分离
+
+之后继续优化 CPU fixed-point 路径，主要修改：
+
+```text
+cpu/python_fast_cpu_resize.cpp
+```
+
+做了两件事：
+
+```text
+1. 为 fixed-point resize 增加持久化线程池
+2. 将 fixed-point bilinear 拆成水平插值 + 垂直混合
+```
+
+线程池优化前，每次 `resize()` 调用都会：
+
+```text
+创建 std::thread
+分配任务
+join 线程
+```
+
+这对 `batch=1` 尤其不利。优化后，默认 `resize` / `resize_fixed` 复用同一个线程池；`resize_float` 仍保留旧实现作为 reference。
+
+水平/垂直分离后，fixed-point 路径先把源行做水平插值，得到中间整数行 buffer，再做垂直方向混合。这样代码结构更接近高性能 resize，也为后续 SIMD 做准备。
+
+快速验证结果：
+
+```text
+3840x1920 -> 640x640, batch=1, max_abs_diff=0
+3840x1920 -> 640x640, batch=8, max_abs_diff=0
+非整数比例小尺寸测试 max_abs_diff=1
+```
+
+快速性能观察：
+
+```text
+batch=1 median_ms_per_frame 约 0.94 ms
+batch=8 median_ms_per_frame 约 0.34 ms
+```
+
+该阶段没有跑完整正式结果，只做了 smoke test。
+
+## 11. 局部重跑与 CSV 合并
+
+为了避免每次小优化都重跑全部五条线，给 [scripts/run_resize_suite.py](scripts/run_resize_suite.py) 增加了：
+
+```text
+--base-csv
+```
+
+使用方式是：
+
+```text
+先读取已有 CSV
+只重跑 --methods 指定的方法
+替换同 method + batch_size 的旧行
+保留其他未重跑方法
+输出新的 CSV/JSON
+```
+
+这样例如只优化了 `cpu_fixed` 和 `cuda` 时，可以复用旧的 `baseline`、`cpu_float`、`cuda_resize_only` 结果，减少重复实验时间。
+
+做过小尺寸 smoke test，确认 base CSV 中未重跑方法会保留，新方法行会正确合并。
+
+## 12. 后续方向
 
 CPU 方向：
 
 ```text
-实现持久化 thread pool，降低 batch=1 的线程创建开销
-继续做 SIMD / row buffer / separable bilinear
+继续做行缓冲复用
+继续做 SIMD，尤其是水平插值阶段
+评估 batch=1 是否还受线程调度和 OpenCV SIMD 优势影响
 ```
 
 CUDA 方向：
@@ -276,4 +343,3 @@ CUDA 方向：
 减少 Python/NumPy 边界开销
 如果上游能在 GPU 解码 MJPEG，则 CUDA pipeline 才更容易体现优势
 ```
-

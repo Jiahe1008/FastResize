@@ -5,9 +5,13 @@
 #include <numpy/arrayobject.h>
 
 #include <algorithm>
+#include <condition_variable>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <exception>
+#include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -171,6 +175,54 @@ inline std::uint8_t horizontalFixedU8(
     return intToU8(value);
 }
 
+inline std::uint8_t horizontalScaledToU8(int value) {
+    return intToU8(
+        (value + (1 << (kWeightBits - 1))) >>
+        kWeightBits
+    );
+}
+
+inline std::uint8_t verticalFromHorizontalScaledU8(
+    int top,
+    int bottom,
+    int wy,
+    int invWy
+) {
+    const int value =
+        (top * invWy + bottom * wy + kBilinearRounding) >>
+        (2 * kWeightBits);
+    return intToU8(value);
+}
+
+void horizontalFixedRow(
+    const std::uint8_t* srcRow,
+    int* scaledRow,
+    const ResizeConfig& config,
+    const AxisTable& xTable
+) {
+    for (int dstX = 0; dstX < config.dstWidth; ++dstX) {
+        const auto xIndex = static_cast<std::size_t>(dstX);
+        const int x0 = xTable.lower[xIndex];
+        const int x1 = xTable.upper[xIndex];
+        const int wx = xTable.weightFixed[xIndex];
+        const int invWx = kWeightScale - wx;
+
+        const int offset0 = x0 * 3;
+        const int offset1 = x1 * 3;
+        const int dstOffset = dstX * 3;
+
+        scaledRow[dstOffset] =
+            srcRow[offset0] * invWx +
+            srcRow[offset1] * wx;
+        scaledRow[dstOffset + 1] =
+            srcRow[offset0 + 1] * invWx +
+            srcRow[offset1 + 1] * wx;
+        scaledRow[dstOffset + 2] =
+            srcRow[offset0 + 2] * invWx +
+            srcRow[offset1 + 2] * wx;
+    }
+}
+
 void resizeRows(
     const std::uint8_t* src,
     std::uint8_t* dst,
@@ -188,6 +240,12 @@ void resizeRows(
         static_cast<std::size_t>(config.srcHeight) * srcRowBytes;
     const std::size_t dstFrameBytes =
         static_cast<std::size_t>(config.dstHeight) * dstRowBytes;
+    std::vector<int> scaledRow0(
+        static_cast<std::size_t>(config.dstWidth) * 3
+    );
+    std::vector<int> scaledRow1(
+        static_cast<std::size_t>(config.dstWidth) * 3
+    );
 
     for (int task = beginTask; task < endTask; ++task) {
         const int frameIndex = task / config.dstHeight;
@@ -209,86 +267,218 @@ void resizeRows(
         std::uint8_t* outRow =
             frameDst + static_cast<std::size_t>(dstY) * dstRowBytes;
 
+        horizontalFixedRow(
+            row0,
+            scaledRow0.data(),
+            config,
+            xTable
+        );
+
         if (wy == 0 || y0 == y1) {
-            for (int dstX = 0; dstX < config.dstWidth; ++dstX) {
-                const auto xIndex = static_cast<std::size_t>(dstX);
-                const int x0 = xTable.lower[xIndex];
-                const int x1 = xTable.upper[xIndex];
-                const int wx = xTable.weightFixed[xIndex];
-                const int invWx = kWeightScale - wx;
-
-                const int offset0 = x0 * 3;
-                const int offset1 = x1 * 3;
-                const int dstOffset = dstX * 3;
-
-                outRow[dstOffset] = horizontalFixedU8(
-                    row0[offset0],
-                    row0[offset1],
-                    wx,
-                    invWx
-                );
-                outRow[dstOffset + 1] = horizontalFixedU8(
-                    row0[offset0 + 1],
-                    row0[offset1 + 1],
-                    wx,
-                    invWx
-                );
-                outRow[dstOffset + 2] = horizontalFixedU8(
-                    row0[offset0 + 2],
-                    row0[offset1 + 2],
-                    wx,
-                    invWx
-                );
+            for (int index = 0; index < config.dstWidth * 3; ++index) {
+                outRow[index] = horizontalScaledToU8(scaledRow0[index]);
             }
             continue;
         }
 
         const std::uint8_t* row1 =
             frameSrc + static_cast<std::size_t>(y1) * srcRowBytes;
+        horizontalFixedRow(
+            row1,
+            scaledRow1.data(),
+            config,
+            xTable
+        );
 
-        for (int dstX = 0; dstX < config.dstWidth; ++dstX) {
-            const auto xIndex = static_cast<std::size_t>(dstX);
-            const int x0 = xTable.lower[xIndex];
-            const int x1 = xTable.upper[xIndex];
-            const int wx = xTable.weightFixed[xIndex];
-            const int invWx = kWeightScale - wx;
-
-            const int offset0 = x0 * 3;
-            const int offset1 = x1 * 3;
-            const int dstOffset = dstX * 3;
-
-            outRow[dstOffset] = bilinearFixedU8(
-                row0[offset0],
-                row0[offset1],
-                row1[offset0],
-                row1[offset1],
-                wx,
-                invWx,
-                wy,
-                invWy
-            );
-            outRow[dstOffset + 1] = bilinearFixedU8(
-                row0[offset0 + 1],
-                row0[offset1 + 1],
-                row1[offset0 + 1],
-                row1[offset1 + 1],
-                wx,
-                invWx,
-                wy,
-                invWy
-            );
-            outRow[dstOffset + 2] = bilinearFixedU8(
-                row0[offset0 + 2],
-                row0[offset1 + 2],
-                row1[offset0 + 2],
-                row1[offset1 + 2],
-                wx,
-                invWx,
+        for (int index = 0; index < config.dstWidth * 3; ++index) {
+            outRow[index] = verticalFromHorizontalScaledU8(
+                scaledRow0[index],
+                scaledRow1[index],
                 wy,
                 invWy
             );
         }
     }
+}
+
+using ResizeWorker = void (*)(
+    const std::uint8_t*,
+    std::uint8_t*,
+    const ResizeConfig&,
+    const AxisTable&,
+    const AxisTable&,
+    int,
+    int
+);
+
+class ResizeThreadPool {
+public:
+    explicit ResizeThreadPool(int threadCount)
+        : threadCount_(threadCount) {
+        workers_.reserve(static_cast<std::size_t>(threadCount_));
+        for (int index = 0; index < threadCount_; ++index) {
+            workers_.emplace_back(
+                &ResizeThreadPool::workerLoop,
+                this,
+                index
+            );
+        }
+    }
+
+    ResizeThreadPool(const ResizeThreadPool&) = delete;
+    ResizeThreadPool& operator=(const ResizeThreadPool&) = delete;
+
+    ~ResizeThreadPool() {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            stopping_ = true;
+            ++generation_;
+        }
+        startCondition_.notify_all();
+        for (std::thread& worker : workers_) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+    }
+
+    int threadCount() const {
+        return threadCount_;
+    }
+
+    void run(
+        ResizeWorker worker,
+        const std::uint8_t* src,
+        std::uint8_t* dst,
+        const ResizeConfig& config,
+        const AxisTable& xTable,
+        const AxisTable& yTable,
+        int totalTasks
+    ) {
+        if (totalTasks <= 0) {
+            return;
+        }
+
+        std::unique_lock<std::mutex> lock(mutex_);
+        worker_ = worker;
+        src_ = src;
+        dst_ = dst;
+        config_ = &config;
+        xTable_ = &xTable;
+        yTable_ = &yTable;
+        totalTasks_ = totalTasks;
+        remainingWorkers_ = threadCount_;
+        exception_ = nullptr;
+        ++generation_;
+        const std::uint64_t jobGeneration = generation_;
+
+        startCondition_.notify_all();
+        doneCondition_.wait(lock, [&] {
+            return remainingWorkers_ == 0 ||
+                   generation_ != jobGeneration;
+        });
+
+        if (exception_ != nullptr) {
+            std::rethrow_exception(exception_);
+        }
+    }
+
+private:
+    void workerLoop(int workerIndex) {
+        std::uint64_t seenGeneration = 0;
+
+        for (;;) {
+            ResizeWorker worker = nullptr;
+            const std::uint8_t* src = nullptr;
+            std::uint8_t* dst = nullptr;
+            const ResizeConfig* config = nullptr;
+            const AxisTable* xTable = nullptr;
+            const AxisTable* yTable = nullptr;
+            int totalTasks = 0;
+            int threadCount = 0;
+
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                startCondition_.wait(lock, [&] {
+                    return stopping_ || generation_ != seenGeneration;
+                });
+                if (stopping_) {
+                    return;
+                }
+
+                seenGeneration = generation_;
+                worker = worker_;
+                src = src_;
+                dst = dst_;
+                config = config_;
+                xTable = xTable_;
+                yTable = yTable_;
+                totalTasks = totalTasks_;
+                threadCount = threadCount_;
+            }
+
+            try {
+                const int beginTask =
+                    (totalTasks * workerIndex) / threadCount;
+                const int endTask =
+                    (totalTasks * (workerIndex + 1)) / threadCount;
+                if (beginTask < endTask) {
+                    worker(
+                        src,
+                        dst,
+                        *config,
+                        *xTable,
+                        *yTable,
+                        beginTask,
+                        endTask
+                    );
+                }
+            } catch (...) {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (exception_ == nullptr) {
+                    exception_ = std::current_exception();
+                }
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                --remainingWorkers_;
+                if (remainingWorkers_ == 0) {
+                    doneCondition_.notify_one();
+                }
+            }
+        }
+    }
+
+    int threadCount_ = 0;
+    std::vector<std::thread> workers_;
+    std::mutex mutex_;
+    std::condition_variable startCondition_;
+    std::condition_variable doneCondition_;
+    bool stopping_ = false;
+    std::uint64_t generation_ = 0;
+    int remainingWorkers_ = 0;
+    ResizeWorker worker_ = nullptr;
+    const std::uint8_t* src_ = nullptr;
+    std::uint8_t* dst_ = nullptr;
+    const ResizeConfig* config_ = nullptr;
+    const AxisTable* xTable_ = nullptr;
+    const AxisTable* yTable_ = nullptr;
+    int totalTasks_ = 0;
+    std::exception_ptr exception_ = nullptr;
+};
+
+std::mutex gThreadPoolMutex;
+std::mutex gThreadPoolRunMutex;
+std::unique_ptr<ResizeThreadPool> gThreadPool;
+
+ResizeThreadPool& ensureThreadPool(int threadCount) {
+    std::lock_guard<std::mutex> lock(gThreadPoolMutex);
+    if (!gThreadPool ||
+        gThreadPool->threadCount() != threadCount) {
+        gThreadPool = std::make_unique<ResizeThreadPool>(threadCount);
+    }
+    return *gThreadPool;
 }
 
 int parseDsize(PyObject* dsizeObject, int& dstWidth, int& dstHeight) {
@@ -466,28 +656,55 @@ PyObject* resizeWithKernel(PyObject* args, PyObject* kwargs, bool useFixedPoint)
 
         PyThreadState* threadState = PyEval_SaveThread();
         try {
-            std::vector<std::thread> workers;
-            workers.reserve(static_cast<std::size_t>(threadCount));
+            const ResizeWorker worker =
+                useFixedPoint ? resizeRows : resizeRowsFloatReference;
 
-            for (int index = 0; index < threadCount; ++index) {
-                const int beginTask =
-                    (totalTasks * index) / threadCount;
-                const int endTask =
-                    (totalTasks * (index + 1)) / threadCount;
-                workers.emplace_back(
-                    useFixedPoint ? resizeRows : resizeRowsFloatReference,
+            if (threadCount == 1) {
+                worker(
                     srcData,
                     dstData,
-                    std::cref(config),
-                    std::cref(xTable),
-                    std::cref(yTable),
-                    beginTask,
-                    endTask
+                    config,
+                    xTable,
+                    yTable,
+                    0,
+                    totalTasks
                 );
-            }
+            } else if (useFixedPoint) {
+                std::lock_guard<std::mutex> runLock(gThreadPoolRunMutex);
+                ResizeThreadPool& threadPool = ensureThreadPool(threadCount);
+                threadPool.run(
+                    worker,
+                    srcData,
+                    dstData,
+                    config,
+                    xTable,
+                    yTable,
+                    totalTasks
+                );
+            } else {
+                std::vector<std::thread> workers;
+                workers.reserve(static_cast<std::size_t>(threadCount));
 
-            for (std::thread& worker : workers) {
-                worker.join();
+                for (int index = 0; index < threadCount; ++index) {
+                    const int beginTask =
+                        (totalTasks * index) / threadCount;
+                    const int endTask =
+                        (totalTasks * (index + 1)) / threadCount;
+                    workers.emplace_back(
+                        worker,
+                        srcData,
+                        dstData,
+                        std::cref(config),
+                        std::cref(xTable),
+                        std::cref(yTable),
+                        beginTask,
+                        endTask
+                    );
+                }
+
+                for (std::thread& thread : workers) {
+                    thread.join();
+                }
             }
         } catch (...) {
             PyEval_RestoreThread(threadState);

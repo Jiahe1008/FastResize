@@ -55,6 +55,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-pool-size", type=int, default=1)
     parser.add_argument("--batch-sizes", type=int, nargs="+", default=DEFAULT_BATCH_SIZES)
     parser.add_argument("--methods", nargs="+", default=DEFAULT_METHODS, choices=DEFAULT_METHODS)
+    parser.add_argument(
+        "--base-csv",
+        type=Path,
+        default=None,
+        help=(
+            "Optional existing CSV to merge from. Rows for methods selected by "
+            "--methods and tested batch sizes are replaced; other rows are kept."
+        ),
+    )
     parser.add_argument("--out-dir", type=Path, default=Path("results_cpu"))
     parser.add_argument("--basename", default="resize_suite")
     return parser.parse_args()
@@ -214,6 +223,41 @@ def run_method(args: argparse.Namespace, method: str, batch_size: int) -> dict[s
     return run_bench_method(args, method, batch_size)
 
 
+def load_base_rows(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with path.open(newline="") as file:
+        for row in csv.DictReader(file):
+            rows.append({
+                "method": row["method"],
+                "batch_size": int(row["batch_size"]),
+                "median_ms_per_frame": float(row["median_ms_per_frame"]),
+                "median_ms_per_batch": float(row["median_ms_per_batch"]),
+                "p95_ms_per_batch": float(row["p95_ms_per_batch"]),
+                "fps_by_median": float(row["fps_by_median"]),
+                "input_throughput_GBps": float(row["input_throughput_GBps"]),
+            })
+    return rows
+
+
+def merge_rows(
+    base_rows: list[dict[str, Any]],
+    new_rows: list[dict[str, Any]],
+    methods: list[str],
+    batch_sizes: list[int],
+) -> list[dict[str, Any]]:
+    replaced = {
+        (method, batch_size)
+        for method in methods
+        for batch_size in batch_sizes
+    }
+    rows = [
+        row for row in base_rows
+        if (row["method"], row["batch_size"]) not in replaced
+    ]
+    rows.extend(new_rows)
+    return rows
+
+
 def write_outputs(args: argparse.Namespace, rows: list[dict[str, Any]]) -> tuple[Path, Path]:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = args.out_dir / f"{args.basename}.csv"
@@ -243,6 +287,7 @@ def write_outputs(args: argparse.Namespace, rows: list[dict[str, Any]]) -> tuple
                 "input_pool_size": args.input_pool_size,
                 "batch_sizes": args.batch_sizes,
                 "methods": args.methods,
+                "base_csv": None if args.base_csv is None else str(args.base_csv),
             },
             "rows": rows,
         }, indent=2),
@@ -281,11 +326,23 @@ def main() -> int:
         raise SystemExit("--input-pool-size must be positive")
     if any(batch_size <= 0 for batch_size in args.batch_sizes):
         raise SystemExit("all batch sizes must be positive")
+    if args.base_csv is not None and not args.base_csv.exists():
+        raise SystemExit(f"--base-csv not found: {args.base_csv}")
 
-    rows: list[dict[str, Any]] = []
+    new_rows: list[dict[str, Any]] = []
     for batch_size in args.batch_sizes:
         for method in args.methods:
-            rows.append(run_method(args, method, batch_size))
+            new_rows.append(run_method(args, method, batch_size))
+
+    if args.base_csv is None:
+        rows = new_rows
+    else:
+        rows = merge_rows(
+            load_base_rows(args.base_csv),
+            new_rows,
+            args.methods,
+            args.batch_sizes,
+        )
 
     csv_path, json_path = write_outputs(args, rows)
     print_summary(rows)
