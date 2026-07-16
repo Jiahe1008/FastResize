@@ -1,0 +1,44 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Native extension build artifacts
+build/
+dist/
+*.egg-info/
+*.so
+*.pyd
+*.dll
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+*.exp
+
+# CUDA / compiler temporary outputs
+*.cubin
+*.fatbin
+*.ptx
+*.sass
+*.ii
+*.i
+*.s
+
+# Benchmark outputs
+results/
+results_cpu/
+cuda_results/
+*.log
+
+# Generated demo/profile images
+cuda_resized.jpg
+
+# Local editor and environment noise
+.vscode/
+.idea/
+.DS_Store
+.env
+.venv/
+venv/

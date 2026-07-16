@@ -30,6 +30,10 @@ struct AxisTable {
     std::vector<int> lower;
     std::vector<int> upper;
     std::vector<int> weightFixed;
+    std::vector<int> lowerOffset;
+    std::vector<int> upperOffset;
+    std::vector<int> weightFixedByValue;
+    std::vector<int> invWeightFixedByValue;
 };
 
 struct ResizeConfig {
@@ -56,6 +60,10 @@ AxisTable makeAxisTable(int srcSize, int dstSize) {
     table.lower.resize(static_cast<std::size_t>(dstSize));
     table.upper.resize(static_cast<std::size_t>(dstSize));
     table.weightFixed.resize(static_cast<std::size_t>(dstSize));
+    table.lowerOffset.resize(static_cast<std::size_t>(dstSize) * 3);
+    table.upperOffset.resize(static_cast<std::size_t>(dstSize) * 3);
+    table.weightFixedByValue.resize(static_cast<std::size_t>(dstSize) * 3);
+    table.invWeightFixedByValue.resize(static_cast<std::size_t>(dstSize) * 3);
 
     const float scale =
         static_cast<float>(srcSize) / static_cast<float>(dstSize);
@@ -70,11 +78,23 @@ AxisTable makeAxisTable(int srcSize, int dstSize) {
             std::clamp(rawLower, 0, srcSize - 1);
         table.upper[static_cast<std::size_t>(dst)] =
             std::clamp(rawUpper, 0, srcSize - 1);
-        table.weightFixed[static_cast<std::size_t>(dst)] = std::clamp(
+        const int weightFixed = std::clamp(
             static_cast<int>(std::lrintf(weight * kWeightScale)),
             0,
             kWeightScale
         );
+        table.weightFixed[static_cast<std::size_t>(dst)] = weightFixed;
+
+        for (int channel = 0; channel < 3; ++channel) {
+            const auto valueIndex = static_cast<std::size_t>(dst * 3 + channel);
+            table.lowerOffset[valueIndex] =
+                table.lower[static_cast<std::size_t>(dst)] * 3 + channel;
+            table.upperOffset[valueIndex] =
+                table.upper[static_cast<std::size_t>(dst)] * 3 + channel;
+            table.weightFixedByValue[valueIndex] = weightFixed;
+            table.invWeightFixedByValue[valueIndex] =
+                kWeightScale - weightFixed;
+        }
     }
 
     return table;
@@ -90,26 +110,61 @@ void horizontalFixedRow(
     const ResizeConfig& config,
     const AxisTable& xTable
 ) {
-    for (int dstX = 0; dstX < config.dstWidth; ++dstX) {
-        const auto xIndex = static_cast<std::size_t>(dstX);
-        const int x0 = xTable.lower[xIndex];
-        const int x1 = xTable.upper[xIndex];
-        const int wx = xTable.weightFixed[xIndex];
-        const int invWx = kWeightScale - wx;
+    const int count = config.dstWidth * 3;
+    int index = 0;
 
-        const int offset0 = x0 * 3;
-        const int offset1 = x1 * 3;
-        const int dstOffset = dstX * 3;
+#if defined(__AVX2__)
+    for (; index + 8 <= count; index += 8) {
+        const int* lower = xTable.lowerOffset.data() + index;
+        const int* upper = xTable.upperOffset.data() + index;
 
-        scaledRow[dstOffset] =
-            srcRow[offset0] * invWx +
-            srcRow[offset1] * wx;
-        scaledRow[dstOffset + 1] =
-            srcRow[offset0 + 1] * invWx +
-            srcRow[offset1 + 1] * wx;
-        scaledRow[dstOffset + 2] =
-            srcRow[offset0 + 2] * invWx +
-            srcRow[offset1 + 2] * wx;
+        const __m256i p0 = _mm256_setr_epi32(
+            srcRow[lower[0]],
+            srcRow[lower[1]],
+            srcRow[lower[2]],
+            srcRow[lower[3]],
+            srcRow[lower[4]],
+            srcRow[lower[5]],
+            srcRow[lower[6]],
+            srcRow[lower[7]]
+        );
+        const __m256i p1 = _mm256_setr_epi32(
+            srcRow[upper[0]],
+            srcRow[upper[1]],
+            srcRow[upper[2]],
+            srcRow[upper[3]],
+            srcRow[upper[4]],
+            srcRow[upper[5]],
+            srcRow[upper[6]],
+            srcRow[upper[7]]
+        );
+        const __m256i wx = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i*>(
+                xTable.weightFixedByValue.data() + index
+            )
+        );
+        const __m256i invWx = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i*>(
+                xTable.invWeightFixedByValue.data() + index
+            )
+        );
+        const __m256i value = _mm256_add_epi32(
+            _mm256_mullo_epi32(p0, invWx),
+            _mm256_mullo_epi32(p1, wx)
+        );
+        _mm256_storeu_si256(
+            reinterpret_cast<__m256i*>(scaledRow + index),
+            value
+        );
+    }
+#endif
+
+    for (; index < count; ++index) {
+        scaledRow[index] =
+            srcRow[xTable.lowerOffset[static_cast<std::size_t>(index)]] *
+                xTable.invWeightFixedByValue[static_cast<std::size_t>(index)] +
+            srcRow[xTable.upperOffset[static_cast<std::size_t>(index)]] *
+                xTable.weightFixedByValue[static_cast<std::size_t>(index)];
     }
 }
 

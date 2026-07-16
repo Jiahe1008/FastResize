@@ -140,25 +140,16 @@ __global__ void resizeBilinearBgr8Kernel(
     // pragma unroll 告知编译器进行循环展开
     #pragma unroll  
     for (int channel = 0; channel < 3; ++channel) {
-        const float pixel00 =
-            static_cast<float>(row0[srcOffset0 + channel]);
-        const float pixel01 =
-            static_cast<float>(row0[srcOffset1 + channel]);
-        const float pixel10 =
-            static_cast<float>(row1[srcOffset0 + channel]);
-        const float pixel11 =
-            static_cast<float>(row1[srcOffset1 + channel]);
+        const float pixel00 = static_cast<float>(row0[srcOffset0 + channel]);
+        const float pixel01 = static_cast<float>(row0[srcOffset1 + channel]);
+        const float pixel10 = static_cast<float>(row1[srcOffset0 + channel]);
+        const float pixel11 = static_cast<float>(row1[srcOffset1 + channel]);
     
         // 双线性插值
         // fmaf(a,b,c) = a*b + c
-        const float top =
-            fmaf(weightX, pixel01 - pixel00, pixel00);
-
-        const float bottom =
-            fmaf(weightX, pixel11 - pixel10, pixel10);
-
-        const float value =
-            fmaf(weightY, bottom - top, top);
+        const float top = fmaf(weightX, pixel01 - pixel00, pixel00);
+        const float bottom =fmaf(weightX, pixel11 - pixel10, pixel10);
+        const float value = fmaf(weightY, bottom - top, top);
 
         outputRow[dstOffset + channel] = floatToU8(value);
     }

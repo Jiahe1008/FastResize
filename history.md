@@ -369,7 +369,44 @@ batch=1 median_ms_per_frame 约 0.71 ms
 batch=8 median_ms_per_frame 约 0.37 ms
 ```
 
-当前 SIMD 版本对 batch=1 有明显改善，但 batch 场景未必稳定超过 `cpu_fixed`。原因是水平插值阶段仍然是标量，SIMD 主要优化了中间行输出打包和垂直混合。后续如果继续 SIMD，应重点优化水平插值阶段。
+随后继续优化 `horizontalFixedRow()`，增加 offset 展开表：
+
+```text
+lowerOffset
+upperOffset
+weightFixedByValue
+invWeightFixedByValue
+```
+
+水平阶段每 8 个输出通道使用 AVX2 做 fixed-point 乘加。由于 RGB 是交错存储，输入字节仍然需要按 offset 取值，但权重乘加和中间行写入已经向量化。
+
+二次快速验证结果：
+
+```text
+非整数比例小尺寸测试 max_abs_diff=1
+3840x1920 -> 640x640, batch=1, max_abs_diff=0
+3840x1920 -> 640x640, batch=8, max_abs_diff=0
+```
+
+快速性能观察：
+
+```text
+batch=1 median_ms_per_frame 约 0.85 ms
+batch=8 median_ms_per_frame 约 0.28 ms
+```
+
+这版水平 SIMD 对 batch 吞吐更有帮助，但 batch=1 仍未超过 OpenCV baseline。原因可能是 RGB 交错布局导致水平 SIMD 需要 offset gather-like 加载，单帧下调度和准备成本仍比较明显。
+
+正式 `resize_suite_pool2` 结果显示，`cpu_simd` 整体不如 `cpu_fixed`：
+
+```text
+batch=1  cpu_simd / cpu_fixed 约 1.01x
+batch=4  cpu_simd / cpu_fixed 约 1.44x
+batch=32 cpu_simd / cpu_fixed 约 1.44x
+batch=64 cpu_simd / cpu_fixed 约 1.17x
+```
+
+结论是当前 SIMD 方案不适合作为最终结果。主要原因是水平阶段虽然使用 AVX2 乘加，但 RGB 交错布局导致输入仍需要按 offset 收集，`_mm256_setr_epi32` 等构造向量的成本抵消了 SIMD 收益。最终报告中应优先使用 `cpu_fixed`，把 `cpu_simd` 作为探索性优化和负结果记录。
 
 ## 13. 后续方向
 
@@ -377,7 +414,7 @@ CPU 方向：
 
 ```text
 继续做行缓冲复用
-继续做水平插值阶段 SIMD
+继续评估更适合 RGB 交错布局的 SIMD 加载/打包方式
 评估 batch=1 是否还受线程调度和 OpenCV SIMD 优势影响
 ```
 
