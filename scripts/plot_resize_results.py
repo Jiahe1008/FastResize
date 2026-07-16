@@ -13,6 +13,7 @@ DEFAULT_ORDER = [
     "baseline",
     "cpu_float",
     "cpu_fixed",
+    "cpu_simd",
     "cuda",
     "cuda_resize_only",
 ]
@@ -21,6 +22,7 @@ STYLES = {
     "baseline": ("OpenCV baseline", "o", "-"),
     "cpu_float": ("CPU float", "D", "-"),
     "cpu_fixed": ("CPU fixed-point", "s", "-"),
+    "cpu_simd": ("CPU SIMD", "P", "-"),
     "cuda": ("CUDA end-to-end", "^", "-"),
     "cuda_resize_only": ("CUDA resize only", "x", "--"),
 }

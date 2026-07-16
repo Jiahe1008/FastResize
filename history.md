@@ -326,13 +326,58 @@ batch=8 median_ms_per_frame 约 0.34 ms
 
 做过小尺寸 smoke test，确认 base CSV 中未重跑方法会保留，新方法行会正确合并。
 
-## 12. 后续方向
+## 12. 独立 CPU SIMD 模块
+
+为了避免继续在原 CPU 实现上叠加复杂逻辑，新建了独立 SIMD 方法：
+
+```text
+cpu/python_fast_cpu_resize_simd.cpp
+```
+
+并在 `setup.py` 中新增 Python 扩展：
+
+```text
+fast_cpu_resize_simd
+```
+
+benchmark 中对应方法名：
+
+```text
+cpu_simd -> fast_cpu_resize_simd:resize
+```
+
+这版 SIMD 仍然是通用双线性 resize，不固定输入/输出尺寸。结构上沿用 fixed-point + 水平/垂直分离：
+
+```text
+水平插值生成 int 中间行
+垂直混合 / 水平行输出阶段使用 AVX2 一次处理 8 个 int
+无 AVX2 时走标量 fallback
+```
+
+快速验证结果：
+
+```text
+非整数比例小尺寸测试 max_abs_diff=1
+3840x1920 -> 640x640, batch=1, max_abs_diff=0
+3840x1920 -> 640x640, batch=8, max_abs_diff=0
+```
+
+快速性能观察：
+
+```text
+batch=1 median_ms_per_frame 约 0.71 ms
+batch=8 median_ms_per_frame 约 0.37 ms
+```
+
+当前 SIMD 版本对 batch=1 有明显改善，但 batch 场景未必稳定超过 `cpu_fixed`。原因是水平插值阶段仍然是标量，SIMD 主要优化了中间行输出打包和垂直混合。后续如果继续 SIMD，应重点优化水平插值阶段。
+
+## 13. 后续方向
 
 CPU 方向：
 
 ```text
 继续做行缓冲复用
-继续做 SIMD，尤其是水平插值阶段
+继续做水平插值阶段 SIMD
 评估 batch=1 是否还受线程调度和 OpenCV SIMD 优势影响
 ```
 

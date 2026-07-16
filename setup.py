@@ -92,6 +92,13 @@ setup(
             extra_compile_args=["-std=c++17", "-O3", "-march=native", "-pthread"],
             extra_link_args=["-pthread"],
         ),
+        Extension(
+            "fast_cpu_resize_simd",
+            sources=["cpu/python_fast_cpu_resize_simd.cpp"],
+            include_dirs=[np.get_include()],
+            extra_compile_args=["-std=c++17", "-O3", "-march=native", "-pthread"],
+            extra_link_args=["-pthread"],
+        ),
     ],
     cmdclass={"build_ext": NvccBuildExt},
 )

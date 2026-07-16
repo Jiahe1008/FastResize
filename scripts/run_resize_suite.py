@@ -21,6 +21,7 @@ DEFAULT_METHODS = [
     "baseline",
     "cpu_float",
     "cpu_fixed",
+    "cpu_simd",
     "cuda",
     "cuda_resize_only",
 ]
@@ -38,8 +39,8 @@ FIELDNAMES = [
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run baseline, CPU float, CPU fixed-point, CUDA end-to-end, "
-            "and CUDA resize-only benchmarks."
+            "Run baseline, CPU float, CPU fixed-point, CPU SIMD, "
+            "CUDA end-to-end, and CUDA resize-only benchmarks."
         )
     )
     parser.add_argument("--iters", type=int, default=300)
@@ -103,6 +104,7 @@ def run_bench_method(args: argparse.Namespace, method: str, batch_size: int) -> 
         "baseline": "opencv",
         "cpu_float": "fast_cpu_resize:resize_float",
         "cpu_fixed": "fast_cpu_resize:resize",
+        "cpu_simd": "fast_cpu_resize_simd:resize",
         "cuda": "cuda_resize_py:resize",
     }
     root = project_root()
@@ -302,7 +304,7 @@ def print_summary(rows: list[dict[str, Any]]) -> None:
         grouped.setdefault(row["batch_size"], {})[row["method"]] = row
 
     print("\nSummary")
-    print("batch, baseline_ms, cpu_float_ms, cpu_fixed_ms, cuda_ms, cuda_resize_only_ms")
+    print("batch, baseline_ms, cpu_float_ms, cpu_fixed_ms, cpu_simd_ms, cuda_ms, cuda_resize_only_ms")
     for batch_size in sorted(grouped):
         group = grouped[batch_size]
         values = [
